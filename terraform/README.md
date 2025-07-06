@@ -51,6 +51,21 @@ See `main.tf` for the main Terraform configuration that creates both the VPC and
 **Note:**
 - The cleanup step is required because EKS Access Entries and `aws-auth` ConfigMap can conflict. This ensures your access is managed only by `aws-auth`.
 
+## Capacity Blocks for GPU Instances
+
+To use capacity blocks for GPU instances, you can specify the capacity block ID when applying Terraform:
+
+```sh
+terraform apply -var="gpu_capacity_block_id=cr-1234567890abcdef0"
+```
+
+If no capacity block ID is provided (or if the variable is empty), the GPU node group will use on-demand instances as usual.
+
+**Example with capacity block:**
+```sh
+./apply-and-cleanup.sh -var="gpu_capacity_block_id=cr-1234567890abcdef0"
+```
+
 ## TODO
 
 - [ ] Add IPv6 support to VPC module

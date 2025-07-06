@@ -49,6 +49,9 @@ module "eks" {
   gpu_node_min_size        = 2
   gpu_node_max_size        = 4
   
+  # Capacity block for GPU instances (optional)
+  gpu_capacity_block_id = var.gpu_capacity_block_id
+  
   common_tags = {
     Environment = "production"
     Project     = "eks-slinky"

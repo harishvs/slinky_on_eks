@@ -19,10 +19,10 @@ module "eks" {
     cpu = {
       name = "cpu-nodes"
 
-      instance_type = "t3.medium"
-      min_size      = 2
-      max_size      = 4
-      desired_size  = 2
+      instance_type = var.cpu_instance_type
+      min_size      = var.cpu_node_min_size
+      max_size      = var.cpu_node_max_size
+      desired_size  = var.cpu_node_desired_capacity
 
       ami_type = "AL2023_x86_64_STANDARD"
 
@@ -50,10 +50,10 @@ module "eks" {
     gpu = {
       name = "gpu-nodes"
 
-      instance_type = "g5g.16xlarge"
-      min_size      = 1
-      max_size      = 3
-      desired_size  = 1
+      instance_type = var.gpu_instance_type
+      min_size      = var.gpu_node_min_size
+      max_size      = var.gpu_node_max_size
+      desired_size  = var.gpu_node_desired_capacity
 
       ami_type = "AL2023_ARM_64_NVIDIA"
 
@@ -68,6 +68,13 @@ module "eks" {
 
       # Security groups
       vpc_security_group_ids = [aws_security_group.eks_nodes.id]
+
+      # Capacity block configuration (only if provided)
+      capacity_reservation_specification = var.gpu_capacity_block_id != "" ? {
+        capacity_reservation_target = {
+          capacity_reservation_id = var.gpu_capacity_block_id
+        }
+      } : null
 
       # Tags
       tags = merge(
