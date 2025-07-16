@@ -47,7 +47,7 @@ module "eks" {
       )
     }
 
-    gpu = {
+    gpu = merge({
       name = "gpu-nodes"
 
       instance_type = var.gpu_instance_type
@@ -69,12 +69,11 @@ module "eks" {
       # Security groups
       vpc_security_group_ids = [aws_security_group.eks_nodes.id]
 
-      # Capacity block configuration (only if provided)
-      capacity_reservation_specification = var.gpu_capacity_block_id != "" ? {
-        capacity_reservation_target = {
-          capacity_reservation_id = var.gpu_capacity_block_id
-        }
-      } : null
+      # GPU-specific bootstrap arguments
+      bootstrap_extra_args = "--node-labels=nvidia.com/gpu=true,accelerator=nvidia,node.kubernetes.io/instance-type=gpu --register-with-taints=nvidia.com/gpu=true:NoSchedule"
+
+      # Custom user data for GPU-specific configurations
+      user_data = base64encode(file("${path.module}/gpu-userdata.sh"))
 
       # Tags
       tags = merge(
@@ -83,7 +82,7 @@ module "eks" {
           "k8s.io/cluster-autoscaler/node-template/label/node.kubernetes.io/instance-type" = "gpu"
         }
       )
-    }
+    }, local.gpu_capacity_reservation)
   }
 
   # Cluster security group
@@ -122,6 +121,17 @@ module "eks" {
   tags = var.common_tags
 }
 
+# Local variables for conditional configuration
+locals {
+  gpu_capacity_reservation = var.gpu_capacity_block_id != "" ? {
+    capacity_reservation_specification = {
+      capacity_reservation_target = {
+        capacity_reservation_id = var.gpu_capacity_block_id
+      }
+    }
+  } : {}
+}
+
 # Security Group for EKS Nodes (simplified, the module handles most of it)
 resource "aws_security_group" "eks_nodes" {
   name_prefix = "${var.cluster_name}-nodes-"
@@ -138,6 +148,8 @@ resource "aws_security_group" "eks_nodes" {
 # Data sources
 data "aws_caller_identity" "current" {}
 data "aws_region" "current" {}
+
+
 
 # Bootstrap EKS Access Entry for cluster creator
 resource "aws_eks_access_entry" "admin" {
